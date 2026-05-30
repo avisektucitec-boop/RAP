@@ -1,0 +1,116 @@
+-----------------------------------------------------------------------------------
+Unmanaged save in entity booking supplement
+-----------------------------------------------------------------------------------
+
+Behavior Definition
+-----------------------------------------------
+managed implementation in class ybp_as_i_travel_root unique;
+strict ( 2 );
+with draft;
+
+// Booking supplement entity
+define behavior for YAS_I_BOOK_SUPPL_CHILD alias BookingSupplement
+//persistent table yas_t_book_suppl
+with unmanaged save with full data
+draft table yas_dt_booksuppl
+lock dependent by _Travel
+authorization dependent by _Travel
+etag master LastChangedAt
+early numbering
+{
+  update;
+  delete;
+  field ( readonly ) TravelId, BookingId, BookingSupplementId;
+  association _Travel { with draft; }
+  association _Booking { with draft; }
+
+//  mapping for yas_t_book_suppl
+//    {
+//      TravelId            = travel_id;
+//      BookingId           = booking_id;
+//      BookingSupplementId = booking_supplement_id;
+//      SupplementId        = supplement_id;
+//      Price               = price;
+//      CurrencyCode        = currency_code;
+//      LastChangedAt       = last_changed_at;
+//    }
+
+}
+
+
+Behavior Implementation
+-----------------------------------------------
+CLASS lsc_yas_i_travel_root DEFINITION INHERITING FROM cl_abap_behavior_saver.
+
+  PROTECTED SECTION.
+
+    METHODS save_modified REDEFINITION.
+
+ENDCLASS.
+
+CLASS lsc_yas_i_travel_root IMPLEMENTATION.
+
+  METHOD save_modified.
+
+
+*******************************************************************************
+* Unmanaged save implementation for booking supplement entity
+*******************************************************************************
+
+    DATA:
+        lt_bookingsupplement   TYPE STANDARD TABLE OF yas_t_book_suppl.
+
+
+    " Create operation for Booking Supplement entity
+    IF create-bookingsupplement IS NOT INITIAL.
+
+      lt_bookingsupplement = VALUE #( FOR ls_bookingsupplement_c IN create-bookingsupplement
+                                        (  travel_id             = ls_bookingsupplement_c-TravelId
+                                           booking_id            = ls_bookingsupplement_c-BookingId
+                                           booking_supplement_id = ls_bookingsupplement_c-BookingSupplementId
+                                           supplement_id         = ls_bookingsupplement_c-SupplementId
+                                           price                 = ls_bookingsupplement_c-Price
+                                           currency_code         = ls_bookingsupplement_c-CurrencyCode
+                                           last_changed_at       = ls_bookingsupplement_c-LastChangedAt ) ).
+
+      INSERT yas_t_book_suppl FROM TABLE @lt_bookingsupplement.
+
+      FREE lt_bookingsupplement.
+
+    ENDIF.
+
+    " Update operation for Booking Supplement entity
+    IF update-bookingsupplement IS NOT INITIAL.
+
+      lt_bookingsupplement = VALUE #( FOR ls_bookingsupplement_u IN update-bookingsupplement
+                                        (  travel_id             = ls_bookingsupplement_u-TravelId
+                                           booking_id            = ls_bookingsupplement_u-BookingId
+                                           booking_supplement_id = ls_bookingsupplement_u-BookingSupplementId
+                                           supplement_id         = ls_bookingsupplement_u-SupplementId
+                                           price                 = ls_bookingsupplement_u-Price
+                                           currency_code         = ls_bookingsupplement_u-CurrencyCode
+                                           last_changed_at       = ls_bookingsupplement_u-LastChangedAt ) ).
+
+      UPDATE yas_t_book_suppl FROM TABLE @lt_bookingsupplement.
+
+      FREE lt_bookingsupplement.
+
+    ENDIF.
+
+    " Delete operation for Booking Supplement entity
+    IF delete-bookingsupplement IS NOT INITIAL.
+
+      lt_bookingsupplement = VALUE #( FOR ls_bookingsupplement_d IN delete-bookingsupplement
+                                        (  travel_id             = ls_bookingsupplement_d-TravelId
+                                           booking_id            = ls_bookingsupplement_d-BookingId
+                                           booking_supplement_id = ls_bookingsupplement_d-BookingSupplementId ) ).
+
+      DELETE yas_t_book_suppl FROM TABLE @lt_bookingsupplement.
+
+      FREE lt_bookingsupplement.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+ENDCLASS.
